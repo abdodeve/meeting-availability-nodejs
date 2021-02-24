@@ -1,0 +1,11 @@
+{
+  "name": "weglot-js-assessment",
+  "version": "1.0.0",
+  "main": "index.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo 'Not implemented yet';"
+  }
+}

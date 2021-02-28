@@ -1,58 +1,113 @@
-const { min } = require("moment");
-var moment = require("moment");
+const nearestDate = require('./utils/nearest-date')
+const dateParser = require('./utils/date-parser')
 
-const dateParser = (initDate) => {
-  const preparedDate = {
-    day: initDate.split(" ")[0],
-    timeFrom: initDate.split(" ")[1].split("-")[0],
-    timeTo: initDate.split("-")[1],
-  };
-  return preparedDate;
-};
+// inputs = [
+//   '1 14:45-14:47',
+//   '2 08:24-10:54',
+//   '1 08:45-12:59',
+//   '3 09:56-16:25',
+//   '5 15:16-16:28',
+// ]
 
-// var minutesOfDay = function (m) {
-//   const hours = m.split(":")[0];
-//   const minutes = m.split(":")[1];
-//   return hours * 60 + minutes;
-// };
+inputs = [
+  //   '1 08:00-17:59',
+  //   '1 12:23-16:27',
+  //   '4 09:49-16:14',
+  '2 8:50-9:00',
+  '2 11:47-13:36',
+  '2 12:47-15:05',
+]
 
-const nearestDate = () => {
-  const initDate = "1 08:45-12:59";
-  const initDateParsed = dateParser(initDate);
+// inputs = [
+//   '1 08:00-17:59',
+//   '1 08:10-13:01',
+//   '2 17:52-17:58',
+//   '2 08:00-12:28',
+//   '2 17:16-17:41',
+//   '2 13:29-17:59',
+//   '2 10:38-10:59',
+// ]
 
-  const hourAdded = moment(initDateParsed.timeTo, "HH:mm")
-    .add(60, "minutes")
-    .format("HH:mm");
+const groupBy = (items, key) => {
+  return items.reduce((result, item) => {
+    ;(result[item[key]] = result[item[key]] || []).push(item)
+    return result
+  }, {})
+}
 
-  let startTime = moment("08:00", "HH:mm");
-  let dynamicTime = moment("08:00", "HH:mm");
-  const endTime = moment("18:00", "HH:mm");
+const sortBy = (items, key) => {
+  console.log('items==>', items)
 
-  const inputDateFrom = moment("8:59", "HH:mm");
-  const inputDateTo = moment("12:55", "HH:mm");
+  return items.sort((a, b) => (a[key] > b[key] ? 1 : b[key] > a[key] ? -1 : 0))
+}
 
-  //   console.log(endTime.isBefore(startTime));
+const prepareInputs = () => {
+  const arrayInputs = inputs.map((element) => dateParser(element))
+  const groupedInputs = groupBy(arrayInputs, 'day')
+  const sortedInputs = Object.keys(groupedInputs).map(function (key) {
+    return sortBy(groupedInputs[key], 'timeFrom')
+  })
 
-  while (dynamicTime.isBefore(endTime)) {
-    console.log({ dynamicTime });
-    if (
-      dynamicTime.isAfter(inputDateFrom.subtract(1, "minutes")) &&
-      dynamicTime.isBefore(inputDateTo.add(1, "minutes"))
-    ) {
-      console.log("Is in the RANGE");
+  return sortedInputs
+}
+
+const getMeetingDate = () => {
+  const inputs = prepareInputs()
+  for (let groupTimes of inputs) {
+    for (let [index, time] of groupTimes.entries()) {
+      const currentNearest = nearestDate(time)
+      if (!currentNearest) break
+      console.log('currentNearest===>', currentNearest)
+      if (groupTimes[index + 1]) {
+        if (
+          nearestDate.isOnIntersection(currentNearest, groupTimes[index + 1])
+        ) {
+          console.log('ops intersection :(')
+        } else {
+          console.log('no intersection', currentNearest)
+          return currentNearest
+        }
+      } else {
+        console.log('no group')
+        if (currentNearest) {
+          console.log('currentNearest-----true', currentNearest)
+          return currentNearest
+        } else {
+          console.log('currentNearest-----false', currentNearest)
+        }
+      }
+
+      //   console.log('index', index)
+      //   if (currentNearest) return currentNearest
     }
-    // My stuff Here
-    if (dynamicTime.format("HH:mm") === "17:50") {
-      dynamicTime.add("9", "minutes");
-    } else {
-      dynamicTime.add("59", "minutes");
-    }
+    // groupTimes.forEach((time, index) => {
+    //   console.log('time', index)
+    //   if (index == 0) return
+    // })
   }
+  return 'nothing'
+  //   inputs.map((groupTimes) => {
+  //     groupTimes.map((time) => {
+  //       console.log('nearestDate==>', nearestDate(time))
+  //       if(nearestDate(time)){
 
-  //   console.log(hourAdded);
-};
+  //       }
+  //     })
+  //   })
+}
 
 const init = () => {
-  nearestDate();
-};
-init();
+  // console.dir(prepareInputs(), { depth: null })
+  //   console.log(
+  //     'nearestDate===>',
+  //     nearestDate({ day: '1', timeFrom: '10:00', timeTo: '12:59' })
+  //   )
+  console.log('getMeetingDate====>', getMeetingDate())
+  //   console.log(
+  //     nearestDate.isOnIntersection(
+  //       { day: '1', timeFrom: '13:00', timeTo: '13:59' },
+  //       { day: '1', timeFrom: '14:00', timeTo: '15:00' }
+  //     )
+  //   )
+}
+init()

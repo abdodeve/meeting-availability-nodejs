@@ -1,94 +1,60 @@
 const moment = require('moment')
-const dateParser = require('./date-parser')
 
-/**
- *  nearestDate
- *  Retrieve the nearest available time of a given date
- *  @param {string} inputDate
- *  @returns {object}
- */
-
-// module.exports = (inputDate) => {
-//   const parsedDate = inputDate
-//   const parsedTimeInput = {
-//     from: moment(inputDate.timeFrom, 'HH:mm'),
-//     to: moment(inputDate.timeTo, 'HH:mm'),
-//   }
-//   const startTime = moment('08:00', 'HH:mm')
-//   const endTime = moment('17:59', 'HH:mm')
-
-//   // Check if the firstAvailableDate.from + 60 minutes doesn't excess 17:59 (endTime)
-//   // console.log('parsedTimeInput.to', parsedTimeInput.to)
-//   if (moment(parsedTimeInput.to).isSameOrAfter(endTime)) {
-//     console.log('is depaaaaaaased')
-//     //Go to the next day
-//     return false
-//   }
-
-//   // firstAvailableDate
-//   const firstAvailableDate = {
-//     from: moment(parsedTimeInput.to).add('1', 'minutes'),
-//     to: moment(parsedTimeInput.to).add('60', 'minutes'),
-//   }
-
-//   // Check if the firstAvailableDate.from + 60 minutes doesn't excess 17:59 (endTime)
-//   if (moment(firstAvailableDate.to).isAfter(moment(endTime))) {
-//     //Go to the next day
-//     return false
-//   }
-//   return {
-//     ...inputDate,
-//     ...{
-//       timeFrom: firstAvailableDate.from.format('HH:mm'),
-//       timeTo: firstAvailableDate.to.format('HH:mm'),
-//     },
-//   }
-// }
-
-module.exports = (inputDate) => {
-  // const parsedDate = dateParser(inputDate);
-  console.log('inputDate=>', inputDate)
+module.exports = (inputDate, isMultipeTimes = false, nextTime = null) => {
+  let startTime
   const parsedDate = inputDate
   const parsedTimeInput = {
-    from: moment(parsedDate.timeFrom, 'HH:mm'),
-    to: moment(parsedDate.timeTo, 'HH:mm'),
+    ...parsedDate,
+    ...{
+      timeFrom: moment(parsedDate.timeFrom, 'HH:mm'),
+      timeTo: moment(parsedDate.timeTo, 'HH:mm'),
+    },
   }
-  const startTime = moment('08:00', 'HH:mm')
+  if (isMultipeTimes) startTime = moment(parsedTimeInput.timeFrom)
+  else startTime = moment('07:59', 'HH:mm')
+
   const endTime = moment('17:59', 'HH:mm')
   let dynamicTime = moment(startTime)
+  let isTimeToReset = false
 
   // Iterate from 08:00 to 17:59
   while (dynamicTime.isBefore(endTime)) {
-    // Check if the current dynamicTime is in the given range from-to (inputs time)
-    console.log('dynamicTime=>', dynamicTime)
-    // if (
-    //   dynamicTime.isAfter(
-    //     moment(parsedTimeInput.from).subtract(1, 'minutes')
-    //   ) &&
-    //   dynamicTime.isBefore(moment(parsedTimeInput.to).add(1, 'minutes'))
-    // ) {
-    if (moment(dynamicTime).isAfter(moment(parsedTimeInput.to))) {
-      dynamicTime = parsedTimeInput.to
+    if (
+      moment(dynamicTime).isAfter(moment(parsedTimeInput.timeTo)) &&
+      !isTimeToReset
+    ) {
+      isTimeToReset = true
+      dynamicTime = moment(parsedTimeInput.timeTo)
     }
+
     const firstAvailableDate = {
       timeFrom: moment(dynamicTime).add('1', 'minutes'),
       timeTo: moment(dynamicTime).add('60', 'minutes'),
     }
 
     // Check if the firstAvailableDate.from + 60 minutes doesn't excess 17:59 (endTime)
-    if (moment(firstAvailableDate.to).isAfter(moment(endTime))) {
-      console.log('Go to the next day')
+    if (moment(firstAvailableDate.timeTo).isAfter(moment(endTime))) {
       return false
     }
-    // console.log('check', moment(firstAvailableDate).add('60', 'minutes'))
-    if (isOnIntersection(firstAvailableDate, parsedTimeInput)) {
-      console.log('isOnIntersection', { firstAvailableDate, parsedTimeInput })
+    if (nextTime) {
+      if (!isOnIntersection(firstAvailableDate, nextTime)) {
+        return {
+          ...parsedTimeInput,
+          timeFrom: firstAvailableDate.timeFrom.format('HH:mm'),
+          timeTo: firstAvailableDate.timeTo.format('HH:mm'),
+        }
+      } else {
+        return false
+      }
+    } else {
+      if (!isOnIntersection(firstAvailableDate, parsedTimeInput)) {
+        return {
+          ...parsedTimeInput,
+          timeFrom: firstAvailableDate.timeFrom.format('HH:mm'),
+          timeTo: firstAvailableDate.timeTo.format('HH:mm'),
+        }
+      }
     }
-    return {
-      timeFrom: firstAvailableDate.timeFrom.format('HH:mm'),
-      timeTo: firstAvailableDate.timeTo.format('HH:mm'),
-    }
-    // }
 
     // At the last iterate force it to to go until 17:59
     if (dynamicTime.format('HH:mm') === '17:50') {

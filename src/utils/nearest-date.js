@@ -1,6 +1,7 @@
 const moment = require('moment')
 
 module.exports = (inputDate, isMultipeTimes = false, nextTime = null) => {
+  console.log({ inputDate, nextTime })
   let startTime
   const parsedDate = inputDate
   const parsedTimeInput = {
@@ -19,6 +20,7 @@ module.exports = (inputDate, isMultipeTimes = false, nextTime = null) => {
 
   // Iterate from 08:00 to 17:59
   while (dynamicTime.isBefore(endTime)) {
+    console.log('dynamicTime', dynamicTime)
     if (
       moment(dynamicTime).isAfter(moment(parsedTimeInput.timeTo)) &&
       !isTimeToReset
@@ -37,14 +39,17 @@ module.exports = (inputDate, isMultipeTimes = false, nextTime = null) => {
       return false
     }
     if (nextTime) {
-      if (!isOnIntersection(firstAvailableDate, nextTime)) {
+      if (
+        !isOnIntersection(firstAvailableDate, nextTime) &&
+        moment(firstAvailableDate.timeTo, 'HH:mm') <
+          moment(nextTime.timeTo, 'HH:mm')
+      ) {
+        console.log('1')
         return {
           ...parsedTimeInput,
           timeFrom: firstAvailableDate.timeFrom.format('HH:mm'),
           timeTo: firstAvailableDate.timeTo.format('HH:mm'),
         }
-      } else {
-        return false
       }
     } else {
       if (!isOnIntersection(firstAvailableDate, parsedTimeInput)) {

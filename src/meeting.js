@@ -1,6 +1,7 @@
 const nearestDate = require('./utils/nearest-date')
 const dateParser = require('./utils/date-parser')
 const readInputFiles = require('./utils/readInputFiles')
+const moment = require('moment')
 
 async function readInputs() {
   const res = await readInputFiles.readFile('./data/input1.txt')
@@ -48,22 +49,24 @@ const getMeetingDate = async (data) => {
   let currentNearest = null
   for (let groupTimes of inputs) {
     for (let [index, time] of groupTimes.entries()) {
-      if (index > 0) {
-        currentNearest = nearestDate(currentNearest, true, time)
-      } else currentNearest = nearestDate(time)
-      if (!currentNearest) break
-      if (groupTimes[index + 1]) {
+      // if (index > 0) {
+      // if (!currentNearest)
+      currentNearest = nearestDate(time, true, groupTimes[index + 1])
+      console.log('currentNearest', currentNearest)
+      // else currentNearest = nearestDate(time)
+      // if (!currentNearest) break
+      if (currentNearest && groupTimes[index + 1]) {
         if (
           nearestDate.isOnIntersection(currentNearest, groupTimes[index + 1])
         ) {
           console.log('ops intersection :(')
         } else {
+          console.log('No intersection ', currentNearest, groupTimes[index + 1])
           return currentNearest
         }
       } else {
         if (currentNearest) {
           return currentNearest
-        } else {
         }
       }
     }
